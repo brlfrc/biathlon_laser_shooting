@@ -1,7 +1,5 @@
 // Program for the target
-/*
- * observe: there are 10 sec for calibration when you start and when you reset the target
-*/
+// Here the debug it's just for the radio
 
 #define Debug true
 
@@ -27,10 +25,10 @@ int threshold_target[5];
 int target_hit= 0;
 
 // servo pinout
-int const close_angle= 30; //counterclockwise: Positive
+int const close_angle= -45; //counterclockwise: Positive
 int const offset_angle = 90;
 int const n_servo= 3;
-int servo_attaches[n_servo]= {3,5,6}; // they are PWM pins
+int servo_attaches[n_servo]= {5,6,3}; // they are PWM pins
 Servo myservo[n_servo];
 
 
@@ -62,7 +60,7 @@ void setup() {
   for (int i=0; i<5; i++)
     threshold_target[i]= calibration_fun(target_pin[i]);
 }
-
+  
 void loop() {
   
   if (radio.available()){
@@ -70,48 +68,40 @@ void loop() {
     newData = true;
   }
 
-  if (Debug == true){
-    if (newData == true) {
-        Serial.print("Data received: ");
-        Serial.println(number_ammo);
-        newData = false;
+  for (int i=0; i<5; i++){
+    if (target_covered[i] == false){
+      if(analogRead(target_pin[i])> threshold_target[i]){
+         close_target (i+1, target_covered);
+         target_covered[i]= true;
+         target_hit=target_hit+1;
+      }
     }
+  }
+  
+  if (target_hit == 5 || number_ammo== 10){
+    delay(2000);
+    reset_servo();
+    target_hit=0;
+    number_ammo= 10;
+    for (int i=0; i<5; i++){
+      target_covered[i] = false;
+      threshold_target[i]= calibration_fun(target_pin[i]);
+    }
+    delay(5000);
   }
 
-  if (number_ammo != 10){
-    for (int i=0; i<5; i++){
-      if (target_covered[i] == false){
-        if(analogRead(target_pin[i])> threshold_target[i]){
-           close_target (i+1, target_covered);
-           target_covered[i]= true;
-           target_hit=target_hit+1;
-        }
-      }
-    }
-  
-    /*if (Debug){
-      Serial.print("number of ammo: ");
-      Serial.println(number_ammo);
-      for (int i=0; i<5; i++){
-        Serial.print(target_covered[i]);
-        Serial.print("\t");
-      }
-      Serial.print("Target_hit: ");
-      Serial.println(target_hit);
-      Serial.println();
-    }*/
-  
-    if (target_hit == 5 || number_ammo== 10){
-      delay(2000);
-      reset_servo();
-      target_hit=0;
-      for (int i=0; i<5; i++){
-        target_covered[i] = false;
-        threshold_target[i]= calibration_fun(target_pin[i]);
-      }
-    }
+  if(Debug == true){
+    Serial.print("Radio Debug: New data received? ");
+    if (newData)
+      Serial.print("Y and value of number of ammo: ");
+    else
+      Serial.print("N and value of number of ammo: ");
+    Serial.println(number_ammo);
   }
-  delay(1000);
+
+  newData = false;
+  delay(10);
+
 }
 
 // Servo function
@@ -126,7 +116,7 @@ void close_target (int target, bool* target_covered){
     close_servo_target (0, target, target_covered);
     return;
   }
-  if (target == 2 || target == 3){
+  if (target == 3 || target == 4){
     close_servo_target (1, target, target_covered);
     return;
   }
@@ -163,9 +153,7 @@ int calibration_fun(int target){
   }
   
   double mean=sum / 20;
-  if (Debug)
-     Serial.println(int(mean));
     
   //return int(mean +d*mean*mean*mean+a*mean*mean+b*mean+c);
-  return mean+10;
+  return mean+40;
 }

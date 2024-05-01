@@ -41,13 +41,13 @@ void setup() {
   value_zero = digitalRead(trigger_pin);
 
   // mode selection
-  pinMode(noise_pin, INPUT_PULLUP);
+  pinMode(selection_pin, INPUT_PULLUP);
   selection_zero= digitalRead(selection_pin);
 
   // led ammo setup
   for (int i=0; i<5; i++)
     pinMode(led_ammo[i], OUTPUT);
-
+    
   Serial.begin(9600);
 
 }
@@ -55,13 +55,15 @@ void setup() {
 
 void loop() {
   int number_ammo=5;
-  int current_selection = digitalRead(trigger_pin);
+  bang_bang(laser_pin, laser_duration, number_ammo);
+  int current_selection = digitalRead(selection_pin);
+  
 
   // Race condition
-  if (current_selection == selection_zero){
+  if (current_selection != selection_zero){
     for (int i = 0; i < number_ammo; i++)
       digitalWrite(led_ammo[i], HIGH);
-  
+      
     while (number_ammo>0){
       if (digitalRead(trigger_pin)!=value_zero){
           number_ammo = bang_bang(laser_pin, laser_duration, number_ammo);
@@ -81,6 +83,9 @@ void loop() {
 
   // Easy condition
   else{
+    for (int i = 0; i < number_ammo; i++)
+      digitalWrite(led_ammo[i], HIGH);
+      
     while (number_ammo>0){
       if (digitalRead(trigger_pin)!=value_zero){
             number_ammo = bang_bang(laser_pin, laser_duration, number_ammo);
