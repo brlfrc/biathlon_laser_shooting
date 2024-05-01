@@ -55,7 +55,6 @@ void setup() {
 
 void loop() {
   int number_ammo=5;
-  bang_bang(laser_pin, laser_duration, number_ammo);
   int current_selection = digitalRead(selection_pin);
   
 
