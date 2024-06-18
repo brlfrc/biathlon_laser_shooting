@@ -24,7 +24,7 @@ int led_ammo[5]={A0, 5, 6, 7, 10};
 int noise_pin = 4;
 
 // mode selection
-int selection_pin = 13;
+int selection_pin = A1;
 int selection_zero;
 
 void setup() {

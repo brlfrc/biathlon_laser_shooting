@@ -1,4 +1,5 @@
 // Program for the target
+
 // Here the debug it's just for the radio
 
 #define Debug true
@@ -29,9 +30,12 @@ int const close_angle= -45; //counterclockwise: Positive
 int const offset_angle = 90;
 int const n_servo= 3;
 int servo_attaches[n_servo]= {5,6,3}; // they are PWM pins
+
 Servo myservo[n_servo];
 
 
+// led pin
+int led_pin= 4;
 
 void setup() {
   if (Debug){
@@ -59,6 +63,10 @@ void setup() {
   // threshold calibration
   for (int i=0; i<5; i++)
     threshold_target[i]= calibration_fun(target_pin[i]);
+
+  // led pin
+  pinMode(led_pin, OUTPUT);
+  digitalWrite(led_pin, HIGH);
 }
   
 void loop() {
@@ -66,11 +74,12 @@ void loop() {
   if (radio.available()){
     radio.read(&number_ammo, sizeof(number_ammo));
     newData = true;
+    delay(10);
   }
 
   for (int i=0; i<5; i++){
     if (target_covered[i] == false){
-      if(analogRead(target_pin[i])> threshold_target[i]){
+      if(read_value(target_pin[i]) > threshold_target[i]){
          close_target (i+1, target_covered);
          target_covered[i]= true;
          target_hit=target_hit+1;
@@ -79,15 +88,24 @@ void loop() {
   }
   
   if (target_hit == 5 || number_ammo== 10){
-    delay(2000);
+    digitalWrite(led_pin, LOW);
+    delay(4000);
     reset_servo();
+    delay(3000);
     target_hit=0;
-    number_ammo= 10;
     for (int i=0; i<5; i++){
       target_covered[i] = false;
       threshold_target[i]= calibration_fun(target_pin[i]);
     }
-    delay(5000);
+        
+    while (number_ammo==10){
+      if (radio.available()){
+        radio.read(&number_ammo, sizeof(number_ammo));
+        delay(10);
+     }
+    }
+    
+    digitalWrite(led_pin, HIGH);
   }
 
   if(Debug == true){
@@ -120,7 +138,7 @@ void close_target (int target, bool* target_covered){
     close_servo_target (1, target, target_covered);
     return;
   }
-  myservo[2].write(close_angle);
+  myservo[2].write(30);
   return;
 }
 
@@ -147,13 +165,25 @@ void close_servo_target (int servo, int target, bool* target_covered){
 int calibration_fun(int target){
   double sum = 0.0;
 
-  for (int i =0; i<20; i++){
+  for (int i =0; i<50; i++){
     sum += analogRead(target);
-    delay(100);
+    delay(5);
   }
   
-  double mean=sum / 20;
+  double mean=sum / 50;
     
-  //return int(mean +d*mean*mean*mean+a*mean*mean+b*mean+c);
-  return mean+40;
+  return mean*(0.08/500*(800- mean)+1.02);
+}
+
+
+// read a value register for a point making a mean of 5 value, to reduce the noise activation
+
+int read_value(int target_pin){
+  double sum = 0.0;
+
+  for (int i =0; i<5; i++){
+    sum += analogRead(target_pin);
+  }
+      
+  return sum / 5;
 }
